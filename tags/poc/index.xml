@@ -1,9 +1,9 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – poc</title><link>https://docs.kcp-edge.io/public/tags/poc/</link><description>Recent content in poc on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/public/tags/poc/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Coding Milestones</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – poc</title><link>https://docs.kcp-edge.io/tags/poc/</link><description>Recent content in poc on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/tags/poc/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Coding Milestones</title><link>https://docs.kcp-edge.io/docs/coding-milestones/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/coding-milestones/</guid><description>
 &lt;!--
 &lt;div class="pageinfo pageinfo-primary">
 &lt;p>This page contains links to the KCP-Edge coding milestones.&lt;/p>
 &lt;/div>
---></description></item><item><title>Docs: Milestone PoC2023q1</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/</guid><description>
+--></description></item><item><title>Docs: Milestone PoC2023q1</title><link>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/</guid><description>
 &lt;!--
 &lt;div class="pageinfo pageinfo-primary">
 &lt;p>This is a placeholder page that shows you how to use this template site.&lt;/p>

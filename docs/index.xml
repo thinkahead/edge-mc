@@ -1,4 +1,4 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – Documentation</title><link>https://docs.kcp-edge.io/public/docs/</link><description>Recent content in Documentation on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/public/docs/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Details</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/outline/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/outline/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – Documentation</title><link>https://docs.kcp-edge.io/docs/</link><description>Recent content in Documentation on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/docs/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Details</title><link>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/outline/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/outline/</guid><description>
 &lt;div class="pageinfo pageinfo-primary">
 &lt;p>Status of this memo: This summarizes the current state of design work that is still in
 progress.&lt;/p>
@@ -719,7 +719,7 @@ edge and collects the specified information from edge to center.&lt;/p>
 management workspaces.&lt;/p>
 &lt;p>The status summaries may include limited-length lists of broken
 objects.&lt;/p>
-&lt;p>Full status from the edge is available in the mailbox workspaces.&lt;/p></description></item><item><title>Docs: Invitation</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</guid><description>
+&lt;p>Full status from the edge is available in the mailbox workspaces.&lt;/p></description></item><item><title>Docs: Invitation</title><link>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</guid><description>
 &lt;p>Dear Contributors&lt;/p>
 &lt;p>We are excited to invite you to join the first &lt;a href="https://github.com/kcp-dev/edge-mc">KCP-Edge opensource community&lt;/a> coding sprint. We will be focus on several key projects that are critical to the development of state-based edge solutions. Our collective work will be showcased to the opensource community on Thursday, March 30th.&lt;/p>
 &lt;p>This coding sprint will provide a great opportunity for you to showcase your skills, learn new techniques, and collaborate with other experienced engineers in the KCP-Edge community. We believe that your contributions will be invaluable in helping us achieve our goals and making a lasting impact in the field of state-based edge technology.&lt;/p>
@@ -735,7 +735,7 @@ objects.&lt;/p>
 &lt;li>Revising the milestone outline with regards to defining bootstrapping and support for cluster-scoped resources.&lt;/li>
 &lt;/ul>
 &lt;p>In addition to workload management, we will also be working on inventory management for the demo, as well as designing various demo scenarios, including a baseline demo with kubectl, demos with ArgoCD, FluxCD, and the European Space Agency (ESA). To support the engineers and demonstrations we will also need to automate the process of creating infrastructure, deploying demo pieces and instrumentation, bootstrapping, running scenarios, and collecting data.&lt;/p>
-&lt;p>If you are interested in joining us for this exciting coding sprint, please slack me &lt;a href="https://kubernetes.slack.com/team/U0462LN24QJ">@Andy Anderson&lt;/a> so I can connect you with others in your area of interest. There is a place for every skillset to contribute. Not quite sure? You can join our &lt;a href="https://calendar.google.com/calendar/embed?src=ujjomvk4fa9fgdaem32afgl7g0%40group.calendar.google.com">bi-weekly community meetings&lt;/a> to watch our progress.&lt;/p></description></item><item><title>Docs: Edge Scheduler</title><link>https://docs.kcp-edge.io/public/docs/concepts/edge-scheduler/</link><pubDate>Thu, 02 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/concepts/edge-scheduler/</guid><description>
+&lt;p>If you are interested in joining us for this exciting coding sprint, please slack me &lt;a href="https://kubernetes.slack.com/team/U0462LN24QJ">@Andy Anderson&lt;/a> so I can connect you with others in your area of interest. There is a place for every skillset to contribute. Not quite sure? You can join our &lt;a href="https://calendar.google.com/calendar/embed?src=ujjomvk4fa9fgdaem32afgl7g0%40group.calendar.google.com">bi-weekly community meetings&lt;/a> to watch our progress.&lt;/p></description></item><item><title>Docs: Edge Scheduler</title><link>https://docs.kcp-edge.io/docs/concepts/edge-scheduler/</link><pubDate>Thu, 02 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/concepts/edge-scheduler/</guid><description>
 &lt;div class="pageinfo pageinfo-primary">
 &lt;p>The edge scheduler monitors the EdgePlacement, Location, and SyncTarget objects and maintains the results of matching.
 It starts from the kcp-scheduling-placement controller forked from kcp-dev/kcp, now being refactored towards the goal above.
@@ -774,7 +774,7 @@ kubectl delete edgeplacement test-1
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:11:21.744670 50397 controller.go:182] &amp;#34;queueing EdgePlacement&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:11:21.744695 50397 controller.go:282] &amp;#34;processing key&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:11:21.744722 50397 controller.go:308] &amp;#34;object deleted before handled&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
-&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Docs: Mailbox Controller</title><link>https://docs.kcp-edge.io/public/docs/concepts/mailbox-controller/</link><pubDate>Thu, 02 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/concepts/mailbox-controller/</guid><description>
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Docs: Mailbox Controller</title><link>https://docs.kcp-edge.io/docs/concepts/mailbox-controller/</link><pubDate>Thu, 02 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/concepts/mailbox-controller/</guid><description>
 &lt;div class="pageinfo pageinfo-primary">
 &lt;p>The mailbox controller runs in the edge service provider workspace and maintains a child workspace per SyncTarget.&lt;/p>
 &lt;/div>
@@ -829,7 +829,7 @@ controller wait for it to be gone and then re-create it.&lt;/p>
 &lt;/code>&lt;/pre>&lt;p>Finally, &lt;code>kubectl delete SyncTarget stest1&lt;/code> and watch the mailbox
 controller react as follows.&lt;/p>
 &lt;pre tabindex="0">&lt;code>I0127 00:26:59.369990 24503 main.go:311] &amp;#34;Deleted unwanted workspace&amp;#34; worker=1 wsName=&amp;#34;269p7excqtb3xen8-w-stest1&amp;#34;
-&lt;/code>&lt;/pre></description></item><item><title>Docs: License</title><link>https://docs.kcp-edge.io/public/docs/contribution-guidelines/license/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/contribution-guidelines/license/</guid><description>
+&lt;/code>&lt;/pre></description></item><item><title>Docs: License</title><link>https://docs.kcp-edge.io/docs/contribution-guidelines/license/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/contribution-guidelines/license/</guid><description>
 &lt;center>Apache License&lt;/center>
 &lt;center>Version 2.0, January 2004&lt;/center>
 &lt;center>http://www.apache.org/licenses/&lt;/center>
@@ -1019,7 +1019,7 @@ You may obtain a copy of the License at&lt;/p>
 distributed under the License is distributed on an &amp;ldquo;AS IS&amp;rdquo; BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitations under the License.&lt;/p></description></item><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</guid><description>
+limitations under the License.&lt;/p></description></item><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/getting-started/quickstart/</guid><description>
 &lt;!--
 &lt;div class="pageinfo pageinfo-primary">
 &lt;p>This document provides instructions on how to build and run KCP-Edge locally.&lt;/p>
@@ -1171,4 +1171,4 @@ documentation:&lt;/p>
 &lt;h2 id="additional-references">Additional references&lt;/h2>
 &lt;ul>
 &lt;li>&lt;a href="https://www.youtube.com/watch?v=M4mn_LlCyzk">Let&amp;rsquo;s Learn kcp - A minimal Kubernetes API server with Saiyam Pathak - July 7, 2021&lt;/a>&lt;/li>
-&lt;/ul></description></item><item><title>Docs:</title><link>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</guid><description/></item></channel></rss>
+&lt;/ul></description></item><item><title>Docs:</title><link>https://docs.kcp-edge.io/docs/getting-started/example-page/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/getting-started/example-page/</guid><description/></item></channel></rss>

@@ -1,4 +1,4 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – Getting Started</title><link>https://docs.kcp-edge.io/public/docs/getting-started/</link><description>Recent content in Getting Started on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/public/docs/getting-started/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – Getting Started</title><link>https://docs.kcp-edge.io/docs/getting-started/</link><description>Recent content in Getting Started on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/docs/getting-started/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/getting-started/quickstart/</guid><description>
 &lt;!--
 &lt;div class="pageinfo pageinfo-primary">
 &lt;p>This document provides instructions on how to build and run KCP-Edge locally.&lt;/p>
@@ -150,4 +150,4 @@ documentation:&lt;/p>
 &lt;h2 id="additional-references">Additional references&lt;/h2>
 &lt;ul>
 &lt;li>&lt;a href="https://www.youtube.com/watch?v=M4mn_LlCyzk">Let&amp;rsquo;s Learn kcp - A minimal Kubernetes API server with Saiyam Pathak - July 7, 2021&lt;/a>&lt;/li>
-&lt;/ul></description></item><item><title>Docs:</title><link>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</guid><description/></item></channel></rss>
+&lt;/ul></description></item><item><title>Docs:</title><link>https://docs.kcp-edge.io/docs/getting-started/example-page/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/getting-started/example-page/</guid><description/></item></channel></rss>
