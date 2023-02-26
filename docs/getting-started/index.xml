@@ -1,0 +1,153 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – Getting Started</title><link>https://docs.kcp-edge.io/public/docs/getting-started/</link><description>Recent content in Getting Started on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/public/docs/getting-started/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</guid><description>
+&lt;!--
+&lt;div class="pageinfo pageinfo-primary">
+&lt;p>This document provides instructions on how to build and run KCP-Edge locally.&lt;/p>
+&lt;/div>
+-->
+&lt;p>To use components from KCP-Edge you must:&lt;/p>
+&lt;ol>
+&lt;li>Install and configure KCP to create a working KCP environment&lt;/li>
+&lt;li>Build KCP-Edge&lt;/li>
+&lt;/ol>
+&lt;h2 id="1-install-and-configure-kcp">1. Install and Configure KCP&lt;/h2>
+&lt;h3 id="prerequisites">Prerequisites&lt;/h3>
+&lt;ul>
+&lt;li>&lt;a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl&lt;/a>&lt;/li>
+&lt;li>A Kubernetes cluster (for local testing, consider &lt;a href="http://kind.sigs.k8s.io">kind&lt;/a>)&lt;/li>
+&lt;/ul>
+&lt;h3 id="download-kcp">Download kcp&lt;/h3>
+&lt;p>Visit our &lt;a href="https://github.com/kcp-dev/kcp/releases/latest">latest release page&lt;/a> and download &lt;code>kcp&lt;/code>
+and &lt;code>kubectl-kcp-plugin&lt;/code> that match your operating system and architecture.&lt;/p>
+&lt;p>Extract &lt;code>kcp&lt;/code> and &lt;code>kubectl-kcp-plugin&lt;/code> and place all the files in the &lt;code>bin&lt;/code> directories somewhere in your &lt;code>$PATH&lt;/code>.&lt;/p>
+&lt;h3 id="start-kcp">Start kcp&lt;/h3>
+&lt;p>You can start kcp using this command:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>kcp start
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This launches kcp in the foreground. You can press &lt;code>ctrl-c&lt;/code> to stop it.&lt;/p>
+&lt;p>To see a complete list of server options, run &lt;code>kcp start options&lt;/code>.&lt;/p>
+&lt;h3 id="set-your-kubeconfig">Set your KUBECONFIG&lt;/h3>
+&lt;p>During its startup, kcp generates a kubeconfig in &lt;code>.kcp/admin.kubeconfig&lt;/code>. Use this to connect to kcp and display the
+version to confirm it&amp;rsquo;s working:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#204a87">export&lt;/span> &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>.kcp/admin.kubeconfig
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ kubectl version
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>WARNING: This version information is deprecated and will be replaced with the output from kubectl version --short. Use --output&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>yaml&lt;span style="color:#000;font-weight:bold">|&lt;/span>json to get the full version.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Client Version: version.Info&lt;span style="color:#ce5c00;font-weight:bold">{&lt;/span>Major:&lt;span style="color:#4e9a06">&amp;#34;1&amp;#34;&lt;/span>, Minor:&lt;span style="color:#4e9a06">&amp;#34;24&amp;#34;&lt;/span>, GitVersion:&lt;span style="color:#4e9a06">&amp;#34;v1.24.4&amp;#34;&lt;/span>, GitCommit:&lt;span style="color:#4e9a06">&amp;#34;95ee5ab382d64cfe6c28967f36b53970b8374491&amp;#34;&lt;/span>, GitTreeState:&lt;span style="color:#4e9a06">&amp;#34;clean&amp;#34;&lt;/span>, BuildDate:&lt;span style="color:#4e9a06">&amp;#34;2022-08-17T18:46:11Z&amp;#34;&lt;/span>, GoVersion:&lt;span style="color:#4e9a06">&amp;#34;go1.19&amp;#34;&lt;/span>, Compiler:&lt;span style="color:#4e9a06">&amp;#34;gc&amp;#34;&lt;/span>, Platform:&lt;span style="color:#4e9a06">&amp;#34;darwin/amd64&amp;#34;&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Kustomize Version: v4.5.4
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Server Version: version.Info&lt;span style="color:#ce5c00;font-weight:bold">{&lt;/span>Major:&lt;span style="color:#4e9a06">&amp;#34;1&amp;#34;&lt;/span>, Minor:&lt;span style="color:#4e9a06">&amp;#34;24&amp;#34;&lt;/span>, GitVersion:&lt;span style="color:#4e9a06">&amp;#34;v1.24.3+kcp-v0.8.0&amp;#34;&lt;/span>, GitCommit:&lt;span style="color:#4e9a06">&amp;#34;41863897&amp;#34;&lt;/span>, GitTreeState:&lt;span style="color:#4e9a06">&amp;#34;clean&amp;#34;&lt;/span>, BuildDate:&lt;span style="color:#4e9a06">&amp;#34;2022-09-02T18:10:37Z&amp;#34;&lt;/span>, GoVersion:&lt;span style="color:#4e9a06">&amp;#34;go1.18.5&amp;#34;&lt;/span>, Compiler:&lt;span style="color:#4e9a06">&amp;#34;gc&amp;#34;&lt;/span>, Platform:&lt;span style="color:#4e9a06">&amp;#34;darwin/amd64&amp;#34;&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="configure-kcp-to-sync-to-your-cluster">Configure kcp to sync to your cluster&lt;/h3>
+&lt;p>kcp can&amp;rsquo;t run pods by itself - it needs at least one physical cluster for that. For this example, we&amp;rsquo;ll be using a
+local &lt;code>kind&lt;/code> cluster. It does not have to exist yet.&lt;/p>
+&lt;p>In this recipe we use the root workspace to hold the description of the workload and where it goes. These usually would go elsewhere, but we use the root workspace here for simplicity.&lt;/p>
+&lt;p>Run the following command to tell kcp about the &lt;code>kind&lt;/code> cluster (replace the syncer image tag as needed; CI now puts built images in &lt;a href="https://github.com/orgs/kcp-dev/packages)">https://github.com/orgs/kcp-dev/packages)&lt;/a>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl kcp workload sync kind --syncer-image ghcr.io/kcp-dev/kcp/syncer:v0.10.0 -o syncer-kind-main.yaml
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating synctarget &lt;span style="color:#4e9a06">&amp;#34;kind&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating service account &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating cluster role &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> to give service account &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> 1. write and sync access to the synctarget &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> 2. write access to apiresourceimports.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating or updating cluster role binding &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> to &lt;span style="color:#204a87">bind&lt;/span> service account &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> to cluster role &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Wrote physical cluster manifest to syncer-kind-main.yaml &lt;span style="color:#204a87;font-weight:bold">for&lt;/span> namespace &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>. Use
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;pcluster-config&amp;gt; kubectl apply -f &lt;span style="color:#4e9a06">&amp;#34;syncer-kind-main.yaml&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to apply it. Use
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;pcluster-config&amp;gt; kubectl get deployment -n &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> kcp-syncer-kind-25coemaz
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to verify the syncer pod is running.
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Next, we need to install the syncer pod on our &lt;code>kind&lt;/code> cluster - this is what actually syncs content from kcp to the
+physical cluster. The kind cluster needs to be running by now. Run the following command:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;/path/to/kind/kubeconfig&amp;gt; kubectl apply -f &lt;span style="color:#4e9a06">&amp;#34;syncer-kind-main.yaml&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>namespace/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>serviceaccount/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>secret/kcp-syncer-kind-25coemaz-token created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>clusterrole.rbac.authorization.k8s.io/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>clusterrolebinding.rbac.authorization.k8s.io/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>secret/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>deployment.apps/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="bind-to-workload-apis-and-create-default-placement">Bind to workload APIs and create default placement&lt;/h3>
+&lt;p>If you are running kcp version v0.10.0 or higher, you will need to run the following commmand (continuing in the &lt;code>root&lt;/code> workspace)
+to create a binding to the workload APIs export and a default placement for your physical cluster:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl kcp &lt;span style="color:#204a87">bind&lt;/span> compute root
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Binding APIExport &lt;span style="color:#4e9a06">&amp;#34;root:compute:kubernetes&amp;#34;&lt;/span>.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>placement placement-1pfxsevk created.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Placement &lt;span style="color:#4e9a06">&amp;#34;placement-1pfxsevk&amp;#34;&lt;/span> is ready.
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="create-a-deployment-in-kcp">Create a deployment in kcp&lt;/h3>
+&lt;p>Let&amp;rsquo;s create a deployment in our kcp workspace and see it get synced to our cluster:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl create deployment --image&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>gcr.io/kuar-demo/kuard-amd64:blue --port&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&lt;span style="color:#0000cf;font-weight:bold">8080&lt;/span> kuard
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>deployment.apps/kuard created
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Once your cluster has pulled the image and started the pod, you should be able to verify the deployment is running in
+kcp:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl get deployments
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>NAME READY UP-TO-DATE AVAILABLE AGE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>kuard 1/1 &lt;span style="color:#0000cf;font-weight:bold">1&lt;/span> &lt;span style="color:#0000cf;font-weight:bold">1&lt;/span> 3s
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>We are still working on adding support for &lt;code>kubectl logs&lt;/code>, &lt;code>kubectl exec&lt;/code>, and &lt;code>kubectl port-forward&lt;/code> to kcp. For the
+time being, you can check directly in your cluster.&lt;/p>
+&lt;p>kcp translates the names of namespaces in workspaces to unique names in a physical cluster. We first must get this
+translated name; if you&amp;rsquo;re following along, your translated name might be different.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;/path/to/kind/kubeconfig&amp;gt; kubectl get pods --all-namespaces --selector &lt;span style="color:#000">app&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>kuard
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>NAMESPACE NAME READY STATUS RESTARTS AGE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>kcp-26zq2mc2yajx kuard-7d49c786c5-wfpcc 1/1 Running &lt;span style="color:#0000cf;font-weight:bold">0&lt;/span> 4m28s
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Now we can e.g. check the pod logs:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;/path/to/kind/kubeconfig&amp;gt; kubectl --namespace kcp-26zq2mc2yajx logs deployment/kuard &lt;span style="color:#000;font-weight:bold">|&lt;/span> head
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 Starting kuard version: v0.10.0-blue
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 **********************************************************************
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 * WARNING: This server may expose sensitive
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 * and secret information. Be careful.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 **********************************************************************
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 Config:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ce5c00;font-weight:bold">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#4e9a06">&amp;#34;address&amp;#34;&lt;/span>: &lt;span style="color:#4e9a06">&amp;#34;:8080&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#4e9a06">&amp;#34;debug&amp;#34;&lt;/span>: false,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#4e9a06">&amp;#34;debug-sitedata-dir&amp;#34;&lt;/span>: &lt;span style="color:#4e9a06">&amp;#34;./sitedata&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="2-build-and-install-kcp-edge">2. Build and Install KCP-Edge&lt;/h2>
+&lt;p>To build and install KCP-Edge components:&lt;/p>
+&lt;ul>
+&lt;li>clone the latest KCP-Edge &lt;a href="https://github.com/kcp-dev/edge-mc">repository&lt;/a>&lt;/li>
+&lt;li>make tools&lt;/li>
+&lt;li>make build&lt;/li>
+&lt;li>make install&lt;/li>
+&lt;/ul>
+&lt;p>The &lt;a href="Makefile">Makefile&lt;/a> provides a set of targets to help simplify the build
+tasks.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sh" data-lang="sh">&lt;span style="display:flex;">&lt;span>make build
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The following targets can be used to lint, test and build the KCP-Edge controllers:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sh" data-lang="sh">&lt;span style="display:flex;">&lt;span>make golint
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>make &lt;span style="color:#204a87">test&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>make install
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="next-steps">Next steps&lt;/h2>
+&lt;p>Thanks for checking out our quickstart!&lt;/p>
+&lt;p>If you&amp;rsquo;re interested in learning more about all the features KCP and KCP-Edge have to offer, please check out our additional
+documentation:&lt;/p>
+&lt;h3 id="kcp">KCP&lt;/h3>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/concepts.md">Concepts&lt;/a> - a high level overview of kcp concepts&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/workspaces.md">Workspaces&lt;/a> - a more thorough introduction on kcp&amp;rsquo;s workspaces&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/locations-and-scheduling.md">Locations &amp;amp; scheduling&lt;/a> - details on kcp&amp;rsquo;s primitives that abstract over clusters&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/syncer.md">Syncer&lt;/a> - information on running the kcp agent that syncs content between kcp and a physical cluster&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/kubectl-kcp-plugin.md">kubectl plugin&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/authorization.md">Authorization&lt;/a> - how kcp manages access control to workspaces and content&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/virtual-workspaces.md">Virtual workspaces&lt;/a> - details on kcp&amp;rsquo;s mechanism for virtual views of workspace content&lt;/li>
+&lt;/ul>
+&lt;h3 id="kcp-edge">KCP-Edge&lt;/h3>
+&lt;p>TBD&lt;/p>
+&lt;h2 id="contributing">Contributing&lt;/h2>
+&lt;p>We ❤️ our contributors! If you&amp;rsquo;re interested in helping us out, please head over to our &lt;a href="CONTRIBUTING.md">Contributing&lt;/a>.&lt;/p>
+&lt;h2 id="getting-in-touch">Getting in touch&lt;/h2>
+&lt;p>There are several ways to communicate with us:&lt;/p>
+&lt;ul>
+&lt;li>The &lt;a href="https://app.slack.com/client/T09NY5SBT/C021U8WSAFK">&lt;code>#kcp-dev&lt;/code> channel&lt;/a> in the &lt;a href="https://slack.k8s.io">Kubernetes Slack workspace&lt;/a>&lt;/li>
+&lt;li>Our mailing lists:
+&lt;ul>
+&lt;li>&lt;a href="https://groups.google.com/g/kcp-dev">kcp-dev&lt;/a> for development discussions&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="additional-references">Additional references&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="https://www.youtube.com/watch?v=M4mn_LlCyzk">Let&amp;rsquo;s Learn kcp - A minimal Kubernetes API server with Saiyam Pathak - July 7, 2021&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Docs:</title><link>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</guid><description/></item></channel></rss>

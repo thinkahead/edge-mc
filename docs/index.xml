@@ -1,0 +1,1174 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – Documentation</title><link>https://docs.kcp-edge.io/public/docs/</link><description>Recent content in Documentation on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/public/docs/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Details</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/outline/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/outline/</guid><description>
+&lt;div class="pageinfo pageinfo-primary">
+&lt;p>Status of this memo: This summarizes the current state of design work that is still in
+progress.&lt;/p>
+&lt;/div>
+&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>This is a quick demo of a fragment of what we think is needed for edge
+multi-cluster. It is intended to demonstrate the following points.&lt;/p>
+&lt;ul>
+&lt;li>Separation of inventory and workload management.&lt;/li>
+&lt;li>The focus here is on workload management, and that strictly reads
+inventory.&lt;/li>
+&lt;li>What passes from inventory to workload management is kcp TMC
+Location and SyncTarget objects.&lt;/li>
+&lt;li>Use of a kcp workspace as the container for the central spec of a workload.&lt;/li>
+&lt;li>Propagation of desired state from center to edge, as directed by
+EdgePlacement objects and the Location and SyncTarget objects they reference.&lt;/li>
+&lt;li>Interfaces designed for a large number of edge clusters.&lt;/li>
+&lt;li>Interfaces designed with the intention that edge clusters operate
+independently of each other and the center (e.g., can tolerate only
+occasional connectivity) and thus any &amp;ldquo;service providers&amp;rdquo; (in the
+technical sense from kcp) in the center or elsewhere.&lt;/li>
+&lt;li>Rule-based customization of desired state.&lt;/li>
+&lt;li>Propagation of reported state from edge to center.&lt;/li>
+&lt;li>Summarization of reported state in the center.&lt;/li>
+&lt;li>The edge opens connections to the center, not vice-versa.&lt;/li>
+&lt;li>An edge computing platform &amp;ldquo;product&amp;rdquo; that can be deployed (as
+opposed to a service that is used).&lt;/li>
+&lt;/ul>
+&lt;p>Some important things that are not attempted in this PoC include the following.&lt;/p>
+&lt;ul>
+&lt;li>An implementation that supports a large number of edge clusters or
+any other thing that requires sharding for scale.&lt;/li>
+&lt;li>More than one SyncTarget per Location.&lt;/li>
+&lt;li>Return or summarization of reported state from associated objects
+(e.g., ReplicaSet or Pod objects associated with a given Deployment
+object).&lt;/li>
+&lt;li>A hierarchy with more than two levels.&lt;/li>
+&lt;li>User control over ordering of propagation from center to edge,
+either among destinations or kinds of objects.&lt;/li>
+&lt;li>More than baseline security (baseline being, e.g., HTTPS, Secret
+objects, non-rotating bearer token based service authentication).&lt;/li>
+&lt;li>A good design for bootstrapping the workload management in the edge
+clusters.&lt;/li>
+&lt;li>Support for workload object types that are not either built into kcp
+or imported via a kcp APIBinding.&lt;/li>
+&lt;li>Very strong isolation between tenants in the edge computing
+platform.&lt;/li>
+&lt;/ul>
+&lt;p>It is TBD whether the implementation will support intermittent
+connectivity. This depends on whether we can quickly and easily get a
+syncer that creates the appropriately independent objects in the edge
+cluster and itself tolerates intermittent connectivity.&lt;/p>
+&lt;p>As further matters of roadmapping development of this PoC:
+customization may be omitted at first, and summarization may start
+with only a limited subset of the implicit functionality.&lt;/p>
+&lt;p>This PoC builds on TMC and makes some compromises to accommodate that.
+The implementation involves workload components (syncers) writing
+status information to inventory objects (SyncTargets).&lt;/p>
+&lt;h2 id="roles-and-responsibilities">Roles and Responsibilities&lt;/h2>
+&lt;ul>
+&lt;li>Developers/deployers/admins/users of the inventory management layer&lt;/li>
+&lt;li>Developers of the workload management layer&lt;/li>
+&lt;li>Deployers/admins of the workload management layer&lt;/li>
+&lt;li>Users of the workload management layer&lt;/li>
+&lt;/ul>
+&lt;h2 id="design-overview">Design overview&lt;/h2>
+&lt;p>In very brief: the design is to reduce each edge placement problem to
+many instances of kcp&amp;rsquo;s TMC problem.&lt;/p>
+&lt;p>See &lt;a href="Edge-PoC-2023q1.svg">the overview picture&lt;/a> for an overview
+picture.&lt;/p>
+&lt;h2 id="inventory-management-workspaces">Inventory Management workspaces&lt;/h2>
+&lt;p>This design takes as a given that something maintains some kcp
+workspaces that contain dynamic collections of Location and SyncTarget
+objects as defined in &lt;a href="https://github.com/kcp-dev/kcp/tree/main/pkg/apis">kcp
+TMC&lt;/a>, and that one
+view can be used to read those Location objects and one view can be
+used to read those SyncTarget objects.&lt;/p>
+&lt;p>To complete the plumbing of the syncers, each inventory workspace that
+contains a SyncTarget needs to also contain the following associated
+objects. FYI, these are the things that &lt;code>kubectl kcp workload sync&lt;/code>
+directly creates besides the SyncTarget. Ensuring their presence is
+part of the problem of bootstrapping the workload management layer and
+is not among the things that this PoC takes a position on.&lt;/p>
+&lt;ol>
+&lt;li>A ServiceAccount that the syncer will authenticate as.&lt;/li>
+&lt;li>A ClusterRole manipulating that SyncTarget and the
+APIResourceImports (what are these?).&lt;/li>
+&lt;li>A ClusterRoleBinding that links that ServiceAccount with that
+ClusterRole.&lt;/li>
+&lt;/ol>
+&lt;h2 id="edge-service-provider-workspace">Edge Service Provider workspace&lt;/h2>
+&lt;p>The edge multi-cluster service is provided by one workspace that
+includes the following things.&lt;/p>
+&lt;ul>
+&lt;li>An APIExport of the edge API group.&lt;/li>
+&lt;li>The edge controllers: scheduler, placement translator, mailbox
+controller, and status sumarizer.&lt;/li>
+&lt;/ul>
+&lt;h2 id="workload-management-workspaces">Workload Management workspaces&lt;/h2>
+&lt;p>The users of edge multi-cluster primarily maintain these. Each one of
+these has both control (API objects that direct the behavior of the
+edge computing platform) and data (API objects that hold workload
+desired and reported state).&lt;/p>
+&lt;h3 id="data-objects">Data objects&lt;/h3>
+&lt;p>The workload desired state is represented by kube-style API objects,
+in the way that is usual in the Kubernetes milieu. For edge computing
+we need to support both cluster-scoped (AKA non-namespaced) kinds as
+well as namespaced kinds of objects.&lt;/p>
+&lt;p>The use of a workspace as a mere container presents a challenge,
+because some kinds of kubernetes API objects at not merely data but
+also modify the behavior of the apiserver holding them. To resolve
+this dilemma, the edge users of such a workspace will use a special
+view of the workspace that holds only data objects. The ones that
+modify apiserver behavior will be translated by the view into
+&amp;ldquo;denatured&amp;rdquo; versions of those objects in the actual workspace so that
+they have no effect on it. And for these objects, the transport from
+center-to-edge will do the inverse: translate the denatured versions
+into the regular (&amp;ldquo;natured&amp;rdquo;?) versions for appearance in the edge
+cluster. Furthermore, for some kinds of objects that modify apiserver
+behavior we want them &amp;ldquo;natured&amp;rdquo; at both center and edge. There are
+thus a few categories of kinds of objects. Following is a listing,
+with with the particular kinds that appear in kcp or plain kubernetes.&lt;/p>
+&lt;h4 id="needs-to-be-denatured-in-center-natured-in-edge">Needs to be denatured in center, natured in edge&lt;/h4>
+&lt;p>For these kinds of objects, clients of the real workspace can
+manipulate such objects and they will modify the behavior of the
+workspace, while clients of the edge computing view will manipulate
+distinct objects that have no effect on the behavior of the workspace.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>APIVERSION&lt;/th>
+&lt;th>KIND&lt;/th>
+&lt;th>NAMESPACED&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>admissionregistration.k8s.io/v1&lt;/td>
+&lt;td>MutatingWebhookConfiguration&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>admissionregistration.k8s.io/v1&lt;/td>
+&lt;td>ValidatingWebhookConfiguration&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>flowcontrol.apiserver.k8s.io/v1beta2&lt;/td>
+&lt;td>FlowSchema&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>flowcontrol.apiserver.k8s.io/v1beta2&lt;/td>
+&lt;td>PriorityLevelConfiguration&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>rbac.authorization.k8s.io/v1&lt;/td>
+&lt;td>ClusterRole&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>rbac.authorization.k8s.io/v1&lt;/td>
+&lt;td>ClusterRoleBinding&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>rbac.authorization.k8s.io/v1&lt;/td>
+&lt;td>Role&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>rbac.authorization.k8s.io/v1&lt;/td>
+&lt;td>RoleBinding&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>LimitRange&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>ResourceQuota&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>ServiceAccount&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="needs-to-be-natured-in-center-and-edge">Needs to be natured in center and edge&lt;/h4>
+&lt;p>These should have their usual effect in both center and edge; they
+need no distinct treatment.&lt;/p>
+&lt;p>Note, however, that they &lt;em>do&lt;/em> have some sequencing implications. They
+have to be created before any dependent objects, deleted after all
+dependent objects.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>APIVERSION&lt;/th>
+&lt;th>KIND&lt;/th>
+&lt;th>NAMESPACED&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>apiextensions.k8s.io/v1&lt;/td>
+&lt;td>CustomResourceDefinition&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Namespace&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="needs-to-be-natured-in-center-not-destined-for-edge">Needs to be natured in center, not destined for edge&lt;/h3>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>APIVERSION&lt;/th>
+&lt;th>KIND&lt;/th>
+&lt;th>NAMESPACED&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>apis.kcp.io/v1alpha1&lt;/td>
+&lt;td>APIBinding&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>A workload management workspace generally has APIBindings to workload
+APIs. These bindings cause corresponding CRDs to be created in the
+same workspace. The CRDs propagate to the edge, the APIBindings do
+not.&lt;/p>
+&lt;h4 id="for-features-not-supported">For features not supported&lt;/h4>
+&lt;p>These are part of k8s or kcp APIs that are not supported by the edge
+computing platform.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>APIVERSION&lt;/th>
+&lt;th>KIND&lt;/th>
+&lt;th>NAMESPACED&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>apiregistration.k8s.io/v1&lt;/td>
+&lt;td>APIService&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apiresource.kcp.io/v1alpha1&lt;/td>
+&lt;td>APIResourceImport&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apiresource.kcp.io/v1alpha1&lt;/td>
+&lt;td>NegotiatedAPIResource&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apis.kcp.io/v1alpha1&lt;/td>
+&lt;td>APIConversion&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>The APIService objects are of two sorts: (a) those that are built-in
+and describe object types built into the apiserver and (b) those that
+are added by admins to add API groups served by custom external
+servers. Sort (b) is not supported because this PoC does not support
+custom external servers in the edge clusters. Sort (a) is not
+programmable in this PoC, but it might be inspectable.&lt;/p>
+&lt;h4 id="not-destined-for-edge">Not destined for edge&lt;/h4>
+&lt;p>These kinds of objects are concerned with either (a) TMC control or
+(b) workload data that should only exist in the edge clusters. These
+will not be available in the view used by edge clients to maintain
+their workload desired and reported state.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>APIVERSION&lt;/th>
+&lt;th>KIND&lt;/th>
+&lt;th>NAMESPACED&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>apis.kcp.io/v1alpha1&lt;/td>
+&lt;td>APIExport&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apis.kcp.io/v1alpha1&lt;/td>
+&lt;td>APIExportEndpointSlice&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apis.kcp.io/v1alpha1&lt;/td>
+&lt;td>APIResourceSchema&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apps/v1&lt;/td>
+&lt;td>ControllerRevision&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>authentication.k8s.io/v1&lt;/td>
+&lt;td>TokenReview&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>authorization.k8s.io/v1&lt;/td>
+&lt;td>LocalSubjectAccessReview&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>authorization.k8s.io/v1&lt;/td>
+&lt;td>SelfSubjectAccessReview&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>authorization.k8s.io/v1&lt;/td>
+&lt;td>SelfSubjectRulesReview&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>authorization.k8s.io/v1&lt;/td>
+&lt;td>SubjectAccessReview&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>certificates.k8s.io/v1&lt;/td>
+&lt;td>CertificateSigningRequest&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>coordination.k8s.io/v1&lt;/td>
+&lt;td>Lease&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>core.kcp.io/v1alpha1&lt;/td>
+&lt;td>LogicalCluster&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>core.kcp.io/v1alpha1&lt;/td>
+&lt;td>Shard&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>events.k8s.io/v1&lt;/td>
+&lt;td>Event&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>scheduling.kcp.io/v1alpha1&lt;/td>
+&lt;td>Location&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>scheduling.kcp.io/v1alpha1&lt;/td>
+&lt;td>Placement&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>tenancy.kcp.io/v1alpha1&lt;/td>
+&lt;td>ClusterWorkspace&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>tenancy.kcp.io/v1alpha1&lt;/td>
+&lt;td>Workspace&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>tenancy.kcp.io/v1alpha1&lt;/td>
+&lt;td>WorkspaceType&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>topology.kcp.io/v1alpha1&lt;/td>
+&lt;td>Partition&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>topology.kcp.io/v1alpha1&lt;/td>
+&lt;td>PartitionSet&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Binding&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>ComponentStatus&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Event&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Node&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>workload.kcp.io/v1alpha1&lt;/td>
+&lt;td>SyncTarget&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="already-denatured-in-center-want-natured-in-edge">Already denatured in center, want natured in edge&lt;/h4>
+&lt;p>These are kinds of objects that kcp already gives no interpretation
+to.&lt;/p>
+&lt;p>This is the default category of kind of object &amp;mdash; any kind of data
+object not specifically listed in another category is implicitly in
+this category. Following are the kinds from k8s and kcp that fall in
+this category.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>APIVERSION&lt;/th>
+&lt;th>KIND&lt;/th>
+&lt;th>NAMESPACED&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>apps/v1&lt;/td>
+&lt;td>DaemonSet&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apps/v1&lt;/td>
+&lt;td>Deployment&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apps/v1&lt;/td>
+&lt;td>ReplicaSet&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>apps/v1&lt;/td>
+&lt;td>StatefulSet&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>autoscaling/v2&lt;/td>
+&lt;td>HorizontalPodAutoscaler&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>batch/v1&lt;/td>
+&lt;td>CronJob&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>batch/v1&lt;/td>
+&lt;td>Job&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>networking.k8s.io/v1&lt;/td>
+&lt;td>Ingress&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>networking.k8s.io/v1&lt;/td>
+&lt;td>IngressClass&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>networking.k8s.io/v1&lt;/td>
+&lt;td>NetworkPolicy&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>node.k8s.io/v1&lt;/td>
+&lt;td>RuntimeClass&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>policy/v1&lt;/td>
+&lt;td>PodDisruptionBudget&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>scheduling.k8s.io/v1&lt;/td>
+&lt;td>PriorityClass&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>storage.k8s.io/v1&lt;/td>
+&lt;td>CSIDriver&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>storage.k8s.io/v1&lt;/td>
+&lt;td>CSINode&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>storage.k8s.io/v1&lt;/td>
+&lt;td>CSIStorageCapacity&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>storage.k8s.io/v1&lt;/td>
+&lt;td>StorageClass&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>storage.k8s.io/v1&lt;/td>
+&lt;td>VolumeAttachment&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>ConfigMap&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Endpoints&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>PersistentVolume&lt;/td>
+&lt;td>false&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>PersistentVolumeClaim&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Pod&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>PodTemplate&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>ReplicationController&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Secret&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>v1&lt;/td>
+&lt;td>Service&lt;/td>
+&lt;td>true&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="control-objects">Control objects&lt;/h3>
+&lt;p>These are the EdgePlacement objects, their associated
+SinglePlacementSlice objects, and the objects that direct
+customization and summarization.&lt;/p>
+&lt;h2 id="mailbox-workspaces">Mailbox workspaces&lt;/h2>
+&lt;p>The mailbox controller maintains one mailbox workspace for each
+SyncTarget. A mailbox workspace acts as a workload source for TMC,
+prescribing the workload to go to the corresponding edge pcluster and
+holding the corresponding TMC Placement object.&lt;/p>
+&lt;p>A mailbox workspace contains the following items.&lt;/p>
+&lt;ol>
+&lt;li>APIBindings (maintained by the mailbox controller) to APIExports of
+workload object types.&lt;/li>
+&lt;li>Workload namespaces holding workload objects, post customization.&lt;/li>
+&lt;li>A TMC Placement object.&lt;/li>
+&lt;/ol>
+&lt;h2 id="edge-cluster">Edge cluster&lt;/h2>
+&lt;p>Also called edge pcluster.&lt;/p>
+&lt;p>One of these contains the following items. FYI, these are the things
+in the YAML output by &lt;code>kubectl kcp workload sync&lt;/code>. The responsibility
+for creating and maintaining these objects is part of the problem of
+bootstrapping the workload management layer and is not among the
+things that this PoC takes a position on.&lt;/p>
+&lt;ul>
+&lt;li>A namespace that holds the syncer and associated objects.&lt;/li>
+&lt;li>A ServiceAccount that the syncer authenticates as when accessing the
+views of the center and when accessing the edge cluster.&lt;/li>
+&lt;li>A Secret holding that ServiceAccount&amp;rsquo;s authorization token.&lt;/li>
+&lt;li>A ClusterRole listing the non-namespaced privileges that the
+syncer will use in the edge cluster.&lt;/li>
+&lt;li>A ClusterRoleBinding linking the syncer&amp;rsquo;s ServiceAccount and ClusterRole.&lt;/li>
+&lt;li>A Role listing the namespaced privileges that the syncer will use in
+the edge cluster.&lt;/li>
+&lt;li>A RoleBinding linking the syncer&amp;rsquo;s ServiceAccount and Role.&lt;/li>
+&lt;li>A Secret holding the kubeconfig that the syncer will use to access
+the edge cluster.&lt;/li>
+&lt;li>A Deployment of the syncer.&lt;/li>
+&lt;/ul>
+&lt;h2 id="mailbox-controller">Mailbox Controller&lt;/h2>
+&lt;p>This controller maintains one mailbox workspace per SyncTarget. Each
+of these mailbox workspaces is used for a distinct TMC problem (e.g.,
+Placement object). These workspaces are all children of the edge
+service provider workspace.&lt;/p>
+&lt;h2 id="edge-scheduler">Edge Scheduler&lt;/h2>
+&lt;p>This controller monitors the EdgePlacement, Location, and SyncTarget
+objects and maintains the results of matching. For each EdgePlacement
+object this controller maintains an associated collection of
+SinglePlacementSlice objects holding the matches for that
+EdgePlacement. These SinglePlacementSlice objects appear in the same
+workspace as the corresponding EdgePlacement; the remainder of how
+they are linked is TBD.&lt;/p>
+&lt;h2 id="placement-translator">Placement Translator&lt;/h2>
+&lt;p>This controller translates each EdgePlacement object into a collection
+of TMC Placement objects and corresponding related objects. For each
+matching SinglePlacement, the placement translator maintains a TMC
+Placement object and copy of the workload &amp;mdash; customized as directed.
+Note that this involves sequencing constraints: CRDs and namespaces
+have to be created before anything that uses them, and deleted after
+everything that uses them. Note also that everything that has to be
+denatured in the workload management workspace also has to be
+denatured in the mailbox workspace.&lt;/p>
+&lt;p>The job of the placement translator can be broken down into the
+following four parts.&lt;/p>
+&lt;ul>
+&lt;li>Resolve each EdgePlacement&amp;rsquo;s &amp;ldquo;what&amp;rdquo; part to a list of particular
+workspace items (namespaces and non-namespaced objects).&lt;/li>
+&lt;li>Maintain the association between the resolved &amp;ldquo;where&amp;rdquo; from the edge
+scheduler and the resolved what.&lt;/li>
+&lt;li>Maintain the copies, with customization, of the workload objects
+from source workspace to mailbox workspaces.&lt;/li>
+&lt;li>Maintain the TMC Placement objects that derive from the
+EdgePlacement objects.&lt;/li>
+&lt;/ul>
+&lt;h2 id="syncers">Syncers&lt;/h2>
+&lt;p>This design nominally uses TMC and its syncers, but that can not be
+exactly true because these syncers need to translate between denatured
+objects in the mailbox workspace and natured objects in the edge
+cluster. Or perhaps not, if there is an additional controller in the
+edge cluster that handles the denatured-natured relation.&lt;/p>
+&lt;h2 id="status-summarizer">Status Summarizer&lt;/h2>
+&lt;p>For each EdgePlacement object and related objects this controller
+maintains the directed status summary objects.&lt;/p>
+&lt;h2 id="usage-scenario">Usage Scenario&lt;/h2>
+&lt;p>The usage scenario breaks, at the highest level, into two parts:
+inventory and workload.&lt;/p>
+&lt;h3 id="inventory-usage">Inventory Usage&lt;/h3>
+&lt;p>A user with infrastructure authority creates one or more inventory
+management workspaces. Each such workspace needs to have the
+following items, which that user will create if they are not
+pre-populated by the workspace type.&lt;/p>
+&lt;ul>
+&lt;li>An APIBinding to the &lt;code>workload.kcp.io&lt;/code> APIExport to get
+&lt;code>SyncTarget&lt;/code>.&lt;/li>
+&lt;li>An APIBinding to the &lt;code>scheduling.kcp.io&lt;/code> APIExport to get
+&lt;code>Location&lt;/code>.&lt;/li>
+&lt;li>A ServiceAccount (with associated token-bearing Secret) (details
+TBD) that the mailbox controller authenticates as.&lt;/li>
+&lt;li>A ClusterRole and ClusterRoleBinding that authorize said
+ServiceAccount to do what the mailbox controller needs to do.&lt;/li>
+&lt;/ul>
+&lt;p>This user also creates one or more edge clusters.&lt;/p>
+&lt;p>For each of those edge clusters, this user creates the following.&lt;/p>
+&lt;ul>
+&lt;li>a corresponding SyncTarget, with an annotation referring to the
+following Secret object, in one of those inventory management
+workspaces;&lt;/li>
+&lt;li>a Secret, in the same workspace, holding a kubeconfig that the
+central automation will use to install the syncer in the edge
+cluster;&lt;/li>
+&lt;li>a Location, in the same workspace, that matches only that
+SyncTarget.&lt;/li>
+&lt;/ul>
+&lt;h3 id="workload-usage">Workload usage&lt;/h3>
+&lt;p>A user with workload authority starts by creating one or more workload
+management workspaces. Each needs to have the following, which that
+user creates if the workload type did not already provide.&lt;/p>
+&lt;ul>
+&lt;li>An APIBinding to the APIExport of &lt;code>edge.kcp.io&lt;/code> from the edge
+service provider workspace.&lt;/li>
+&lt;li>For each of the Edge Scheduler, the Placement Translator, and the
+Status Summarizer:
+&lt;ul>
+&lt;li>A ServiceAccount for that controller to authenticate as;&lt;/li>
+&lt;li>A ClusterRole granting the privileges needed by that controller;&lt;/li>
+&lt;li>A ClusterRoleBinding that binds those two.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>This user also uses the edge-workspace-as-container view of each such
+workspace to describe the workload desired state.&lt;/p>
+&lt;p>This user creates one or more EdgePlacement objects to say which
+workload goes where. These may be accompanied by API objects that
+specify rule-baesd customization, specify how status is to be
+summarized.&lt;/p>
+&lt;p>The edge-mc implementation propagates the desired state from center to
+edge and collects the specified information from edge to center.&lt;/p>
+&lt;p>The edge user monitors status summary objects in their workload
+management workspaces.&lt;/p>
+&lt;p>The status summaries may include limited-length lists of broken
+objects.&lt;/p>
+&lt;p>Full status from the edge is available in the mailbox workspaces.&lt;/p></description></item><item><title>Docs: Invitation</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</guid><description>
+&lt;p>Dear Contributors&lt;/p>
+&lt;p>We are excited to invite you to join the first &lt;a href="https://github.com/kcp-dev/edge-mc">KCP-Edge opensource community&lt;/a> coding sprint. We will be focus on several key projects that are critical to the development of state-based edge solutions. Our collective work will be showcased to the opensource community on Thursday, March 30th.&lt;/p>
+&lt;p>This coding sprint will provide a great opportunity for you to showcase your skills, learn new techniques, and collaborate with other experienced engineers in the KCP-Edge community. We believe that your contributions will be invaluable in helping us achieve our goals and making a lasting impact in the field of state-based edge technology.&lt;/p>
+&lt;p>The coding sprint will be dedicated to completing the following workload management elements:&lt;/p>
+&lt;ul>
+&lt;li>Implementing an edge scheduler and placement translator, including customization options,&lt;/li>
+&lt;li>Incorporating existing customization API into the &lt;a href="https://github.com/kcp-dev/edge-mc">KCP-Edge repo&lt;/a>,&lt;/li>
+&lt;li>Investigating implementation of a status summarizer, starting with basic implicit status, and later adding programmed summarization,&lt;/li>
+&lt;li>Updating summarization API and integrating it into the &lt;a href="https://github.com/kcp-dev/edge-mc">KCP-Edge repo&lt;/a>,&lt;/li>
+&lt;li>Streamlining the creation of workload management workspaces,&lt;/li>
+&lt;li>Completing our existing implementation of a mailbox controller,&lt;/li>
+&lt;li>Examining the use of Postgresql through Kine instead of etcd for scalability,&lt;/li>
+&lt;li>Revising the milestone outline with regards to defining bootstrapping and support for cluster-scoped resources.&lt;/li>
+&lt;/ul>
+&lt;p>In addition to workload management, we will also be working on inventory management for the demo, as well as designing various demo scenarios, including a baseline demo with kubectl, demos with ArgoCD, FluxCD, and the European Space Agency (ESA). To support the engineers and demonstrations we will also need to automate the process of creating infrastructure, deploying demo pieces and instrumentation, bootstrapping, running scenarios, and collecting data.&lt;/p>
+&lt;p>If you are interested in joining us for this exciting coding sprint, please slack me &lt;a href="https://kubernetes.slack.com/team/U0462LN24QJ">@Andy Anderson&lt;/a> so I can connect you with others in your area of interest. There is a place for every skillset to contribute. Not quite sure? You can join our &lt;a href="https://calendar.google.com/calendar/embed?src=ujjomvk4fa9fgdaem32afgl7g0%40group.calendar.google.com">bi-weekly community meetings&lt;/a> to watch our progress.&lt;/p></description></item><item><title>Docs: Edge Scheduler</title><link>https://docs.kcp-edge.io/public/docs/concepts/edge-scheduler/</link><pubDate>Thu, 02 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/concepts/edge-scheduler/</guid><description>
+&lt;div class="pageinfo pageinfo-primary">
+&lt;p>The edge scheduler monitors the EdgePlacement, Location, and SyncTarget objects and maintains the results of matching.
+It starts from the kcp-scheduling-placement controller forked from kcp-dev/kcp, now being refactored towards the goal above.
+It works with &lt;a href="https://github.com/kcp-dev/kcp/tree/4506fdc064060b3fe82e1082533f9798b36ba7a5">this snapshot&lt;/a> of kcp.&lt;/p>
+&lt;/div>
+&lt;h4 id="a-short-demo">A short demo&lt;/h4>
+&lt;p>Start a kcp server with &lt;a href="https://github.com/kcp-dev/kcp/tree/4506fdc064060b3fe82e1082533f9798b36ba7a5">this snapshot&lt;/a>.&lt;/p>
+&lt;p>Point &lt;code>$KUBECONFIG&lt;/code> to the admin kubeconfig for that kcp server.&lt;/p>
+&lt;p>Workspace &lt;code>root:edge&lt;/code> is used as the edge service provider workspace.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-console" data-lang="console">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">kubectl ws root
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">kubectl ws create edge --enter
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Install CRDs and APIExport.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-console" data-lang="console">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">kubectl apply -f config/crds/ -f config/exports/
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>User home workspace is used as the workload management workspace.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-console" data-lang="console">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">kubectl ws \~
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Bind APIs and create an EdgePlacement CR.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-console" data-lang="console">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">kubectl apply -f config/imports/
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">kubectl apply -f config/samples/edgeplacement_test-1.yaml
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Go to &lt;code>root:edge&lt;/code> workspace and run the edge scheduler.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-console" data-lang="console">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">kubectl ws root:edge
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">go run cmd/placement/main.go --kcp-kubeconfig=&amp;lt;path to kcp admin kubeconfig&amp;gt; -v &amp;lt;verbosity (default 2)&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The outputs from the edge scheduler should be similar to:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-console" data-lang="console">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:09:54.739592 50397 placement.go:207] &amp;#34;Found APIExport view&amp;#34; exportName=&amp;#34;edge.kcp.io&amp;#34; serverURL=&amp;#34;https://192.168.1.54:6443/services/apiexport/21rzp91t9ife44tq/edge.kcp.io&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:09:54.755028 50397 controller.go:182] &amp;#34;queueing EdgePlacement&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:09:54.841368 50397 controller.go:257] &amp;#34;Starting controller&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:09:54.841492 50397 controller.go:282] &amp;#34;processing key&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">reconciling EdgePlacement test-1 in Workspace kvdk2spgmbix
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Go to &lt;code>\~&lt;/code> and edit or delete the EdgePlacement.&lt;/p>
+&lt;pre tabindex="0">&lt;code>kubectl ws \~
+kubectl edit edgeplacement test-1
+kubectl delete edgeplacement test-1
+&lt;/code>&lt;/pre>&lt;p>Additional outputs from the edge scheduler should be similar to:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-console" data-lang="console">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:10:12.404611 50397 controller.go:182] &amp;#34;queueing EdgePlacement&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:10:12.404634 50397 controller.go:282] &amp;#34;processing key&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">reconciling EdgePlacement test-1 in Workspace kvdk2spgmbix
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:11:21.744670 50397 controller.go:182] &amp;#34;queueing EdgePlacement&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:11:21.744695 50397 controller.go:282] &amp;#34;processing key&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#000;font-style:italic">I0214 17:11:21.744722 50397 controller.go:308] &amp;#34;object deleted before handled&amp;#34; reconciler=&amp;#34;edge-scheduler&amp;#34; key=&amp;#34;kvdk2spgmbix|test-1&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Docs: Mailbox Controller</title><link>https://docs.kcp-edge.io/public/docs/concepts/mailbox-controller/</link><pubDate>Thu, 02 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/concepts/mailbox-controller/</guid><description>
+&lt;div class="pageinfo pageinfo-primary">
+&lt;p>The mailbox controller runs in the edge service provider workspace and maintains a child workspace per SyncTarget.&lt;/p>
+&lt;/div>
+&lt;h4 id="temporary-design-detail">Temporary design detail&lt;/h4>
+&lt;p>For a given SyncTarget T, the mailbox controller currently chooses the
+name of the corresponding workspace to be the concatenation of the
+following.&lt;/p>
+&lt;ul>
+&lt;li>the ID of the logical cluster containing T&lt;/li>
+&lt;li>the string &amp;ldquo;-w-&amp;rdquo;&lt;/li>
+&lt;li>T&amp;rsquo;s name&lt;/li>
+&lt;/ul>
+&lt;p>This is ambiguous and subject to name length overflows. Later
+revisions will do better.&lt;/p>
+&lt;h4 id="usage">Usage&lt;/h4>
+&lt;p>The command line flags, beyond the basics, are as follows.&lt;/p>
+&lt;pre tabindex="0">&lt;code> --concurrency int number of syncs to run in parallel (default 4)
+--inventory-context string current-context override for inventory-kubeconfig (default &amp;#34;root&amp;#34;)
+--inventory-kubeconfig string pathname of kubeconfig file for inventory service provider workspace
+--server-bind-address ipport The IP address with port at which to serve /metrics and /debug/pprof/ (default :10203)
+--workload-context string current-context override for workload-kubeconfig
+--workload-kubeconfig string pathname of kubeconfig file for edge workload service provider workspace
+&lt;/code>&lt;/pre>&lt;h4 id="try-it">Try It&lt;/h4>
+&lt;p>To exercise it, do the following steps.&lt;/p>
+&lt;p>Start a kcp server. Do the remaining steps in a separate shell, with
+&lt;code>$KUBECONFIG&lt;/code> set to the admin config for that kcp server.&lt;/p>
+&lt;p>&lt;code>kubectl ws root&lt;/code>&lt;/p>
+&lt;p>&lt;code>kubectl ws create edge --enter&lt;/code>&lt;/p>
+&lt;p>After that, a run of the controller should look like the following.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ce5c00;font-weight:bold">(&lt;/span>base&lt;span style="color:#ce5c00;font-weight:bold">)&lt;/span> mspreitz@mjs12 edge-mc % go run ./cmd/mailbox-controller -v&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&lt;span style="color:#0000cf;font-weight:bold">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>I0127 00:21:48.876022 &lt;span style="color:#0000cf;font-weight:bold">24503&lt;/span> main.go:206&lt;span style="color:#ce5c00;font-weight:bold">]&lt;/span> &lt;span style="color:#4e9a06">&amp;#34;Found APIExport view&amp;#34;&lt;/span> &lt;span style="color:#000">exportName&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&lt;span style="color:#4e9a06">&amp;#34;workload.kcp.io&amp;#34;&lt;/span> &lt;span style="color:#000">serverURL&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&lt;span style="color:#4e9a06">&amp;#34;https://192.168.58.123:6443/services/apiexport/root/workload.kcp.io&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>I0127 00:21:48.877965 &lt;span style="color:#0000cf;font-weight:bold">24503&lt;/span> shared_informer.go:255&lt;span style="color:#ce5c00;font-weight:bold">]&lt;/span> Waiting &lt;span style="color:#204a87;font-weight:bold">for&lt;/span> caches to sync &lt;span style="color:#204a87;font-weight:bold">for&lt;/span> mailbox-controller
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>I0127 00:21:48.978352 &lt;span style="color:#0000cf;font-weight:bold">24503&lt;/span> shared_informer.go:262&lt;span style="color:#ce5c00;font-weight:bold">]&lt;/span> Caches are synced &lt;span style="color:#204a87;font-weight:bold">for&lt;/span> mailbox-controller
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>I0127 00:21:48.978414 &lt;span style="color:#0000cf;font-weight:bold">24503&lt;/span> main.go:169&lt;span style="color:#ce5c00;font-weight:bold">]&lt;/span> &lt;span style="color:#4e9a06">&amp;#34;Informers synced&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>In a separate shell, &lt;code>kubectl create&lt;/code> the following object.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#204a87;font-weight:bold">apiVersion&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline"> &lt;/span>&lt;span style="color:#000">workload.kcp.io/v1alpha1&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f8f8f8;text-decoration:underline">&lt;/span>&lt;span style="color:#204a87;font-weight:bold">kind&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline"> &lt;/span>&lt;span style="color:#000">SyncTarget&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f8f8f8;text-decoration:underline">&lt;/span>&lt;span style="color:#204a87;font-weight:bold">metadata&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f8f8f8;text-decoration:underline"> &lt;/span>&lt;span style="color:#204a87;font-weight:bold">name&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline"> &lt;/span>&lt;span style="color:#000">stest1&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f8f8f8;text-decoration:underline">&lt;/span>&lt;span style="color:#204a87;font-weight:bold">spec&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f8f8f8;text-decoration:underline"> &lt;/span>&lt;span style="color:#204a87;font-weight:bold">cells&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f8f8f8;text-decoration:underline"> &lt;/span>&lt;span style="color:#204a87;font-weight:bold">foo&lt;/span>&lt;span style="color:#000;font-weight:bold">:&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline"> &lt;/span>&lt;span style="color:#000">bar&lt;/span>&lt;span style="color:#f8f8f8;text-decoration:underline">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>That should provoke logging like the following from the mailbox controller.&lt;/p>
+&lt;pre tabindex="0">&lt;code>I0127 00:23:52.545266 24503 main.go:330] &amp;#34;Created missing workspace&amp;#34; worker=1 wsName=&amp;#34;269p7excqtb3xen8-w-stest1&amp;#34;
+&lt;/code>&lt;/pre>&lt;p>And you can verify that like so.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ce5c00;font-weight:bold">(&lt;/span>base&lt;span style="color:#ce5c00;font-weight:bold">)&lt;/span> mspreitz@mjs12 kcp % kubectl get Workspace
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>NAME TYPE PHASE URL AGE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>269p7excqtb3xen8-w-stest1 universal https://192.168.58.123:6443/clusters/2ktljajura89bwf2 29s
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Next, &lt;code>kubectl delete&lt;/code> that Workspace, and watch the mailbox
+controller wait for it to be gone and then re-create it.&lt;/p>
+&lt;pre tabindex="0">&lt;code>I0127 00:26:40.251001 24503 main.go:330] &amp;#34;Created missing workspace&amp;#34; worker=2 wsName=&amp;#34;269p7excqtb3xen8-w-stest1&amp;#34;
+&lt;/code>&lt;/pre>&lt;p>Finally, &lt;code>kubectl delete SyncTarget stest1&lt;/code> and watch the mailbox
+controller react as follows.&lt;/p>
+&lt;pre tabindex="0">&lt;code>I0127 00:26:59.369990 24503 main.go:311] &amp;#34;Deleted unwanted workspace&amp;#34; worker=1 wsName=&amp;#34;269p7excqtb3xen8-w-stest1&amp;#34;
+&lt;/code>&lt;/pre></description></item><item><title>Docs: License</title><link>https://docs.kcp-edge.io/public/docs/contribution-guidelines/license/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/contribution-guidelines/license/</guid><description>
+&lt;center>Apache License&lt;/center>
+&lt;center>Version 2.0, January 2004&lt;/center>
+&lt;center>http://www.apache.org/licenses/&lt;/center>
+&lt;/br>
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+&lt;ol>
+&lt;li>
+&lt;p>Definitions.&lt;/p>
+&lt;p>&amp;ldquo;License&amp;rdquo; shall mean the terms and conditions for use, reproduction,
+and distribution as defined by Sections 1 through 9 of this document.&lt;/p>
+&lt;p>&amp;ldquo;Licensor&amp;rdquo; shall mean the copyright owner or entity authorized by
+the copyright owner that is granting the License.&lt;/p>
+&lt;p>&amp;ldquo;Legal Entity&amp;rdquo; shall mean the union of the acting entity and all
+other entities that control, are controlled by, or are under common
+control with that entity. For the purposes of this definition,
+&amp;ldquo;control&amp;rdquo; means (i) the power, direct or indirect, to cause the
+direction or management of such entity, whether by contract or
+otherwise, or (ii) ownership of fifty percent (50%) or more of the
+outstanding shares, or (iii) beneficial ownership of such entity.&lt;/p>
+&lt;p>&amp;ldquo;You&amp;rdquo; (or &amp;ldquo;Your&amp;rdquo;) shall mean an individual or Legal Entity
+exercising permissions granted by this License.&lt;/p>
+&lt;p>&amp;ldquo;Source&amp;rdquo; form shall mean the preferred form for making modifications,
+including but not limited to software source code, documentation
+source, and configuration files.&lt;/p>
+&lt;p>&amp;ldquo;Object&amp;rdquo; form shall mean any form resulting from mechanical
+transformation or translation of a Source form, including but
+not limited to compiled object code, generated documentation,
+and conversions to other media types.&lt;/p>
+&lt;p>&amp;ldquo;Work&amp;rdquo; shall mean the work of authorship, whether in Source or
+Object form, made available under the License, as indicated by a
+copyright notice that is included in or attached to the work
+(an example is provided in the Appendix below).&lt;/p>
+&lt;p>&amp;ldquo;Derivative Works&amp;rdquo; shall mean any work, whether in Source or Object
+form, that is based on (or derived from) the Work and for which the
+editorial revisions, annotations, elaborations, or other modifications
+represent, as a whole, an original work of authorship. For the purposes
+of this License, Derivative Works shall not include works that remain
+separable from, or merely link (or bind by name) to the interfaces of,
+the Work and Derivative Works thereof.&lt;/p>
+&lt;p>&amp;ldquo;Contribution&amp;rdquo; shall mean any work of authorship, including
+the original version of the Work and any modifications or additions
+to that Work or Derivative Works thereof, that is intentionally
+submitted to Licensor for inclusion in the Work by the copyright owner
+or by an individual or Legal Entity authorized to submit on behalf of
+the copyright owner. For the purposes of this definition, &amp;ldquo;submitted&amp;rdquo;
+means any form of electronic, verbal, or written communication sent
+to the Licensor or its representatives, including but not limited to
+communication on electronic mailing lists, source code control systems,
+and issue tracking systems that are managed by, or on behalf of, the
+Licensor for the purpose of discussing and improving the Work, but
+excluding communication that is conspicuously marked or otherwise
+designated in writing by the copyright owner as &amp;ldquo;Not a Contribution.&amp;rdquo;&lt;/p>
+&lt;p>&amp;ldquo;Contributor&amp;rdquo; shall mean Licensor and any individual or Legal Entity
+on behalf of whom a Contribution has been received by Licensor and
+subsequently incorporated within the Work.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Grant of Copyright License. Subject to the terms and conditions of
+this License, each Contributor hereby grants to You a perpetual,
+worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+copyright license to reproduce, prepare Derivative Works of,
+publicly display, publicly perform, sublicense, and distribute the
+Work and such Derivative Works in Source or Object form.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Grant of Patent License. Subject to the terms and conditions of
+this License, each Contributor hereby grants to You a perpetual,
+worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+(except as stated in this section) patent license to make, have made,
+use, offer to sell, sell, import, and otherwise transfer the Work,
+where such license applies only to those patent claims licensable
+by such Contributor that are necessarily infringed by their
+Contribution(s) alone or by combination of their Contribution(s)
+with the Work to which such Contribution(s) was submitted. If You
+institute patent litigation against any entity (including a
+cross-claim or counterclaim in a lawsuit) alleging that the Work
+or a Contribution incorporated within the Work constitutes direct
+or contributory patent infringement, then any patent licenses
+granted to You under this License for that Work shall terminate
+as of the date such litigation is filed.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Redistribution. You may reproduce and distribute copies of the
+Work or Derivative Works thereof in any medium, with or without
+modifications, and in Source or Object form, provided that You
+meet the following conditions:&lt;/p>
+&lt;p>(a) You must give any other recipients of the Work or
+Derivative Works a copy of this License; and&lt;/p>
+&lt;p>(b) You must cause any modified files to carry prominent notices
+stating that You changed the files; and&lt;/p>
+&lt;p>(c) You must retain, in the Source form of any Derivative Works
+that You distribute, all copyright, patent, trademark, and
+attribution notices from the Source form of the Work,
+excluding those notices that do not pertain to any part of
+the Derivative Works; and&lt;/p>
+&lt;p>(d) If the Work includes a &amp;ldquo;NOTICE&amp;rdquo; text file as part of its
+distribution, then any Derivative Works that You distribute must
+include a readable copy of the attribution notices contained
+within such NOTICE file, excluding those notices that do not
+pertain to any part of the Derivative Works, in at least one
+of the following places: within a NOTICE text file distributed
+as part of the Derivative Works; within the Source form or
+documentation, if provided along with the Derivative Works; or,
+within a display generated by the Derivative Works, if and
+wherever such third-party notices normally appear. The contents
+of the NOTICE file are for informational purposes only and
+do not modify the License. You may add Your own attribution
+notices within Derivative Works that You distribute, alongside
+or as an addendum to the NOTICE text from the Work, provided
+that such additional attribution notices cannot be construed
+as modifying the License.&lt;/p>
+&lt;p>You may add Your own copyright statement to Your modifications and
+may provide additional or different license terms and conditions
+for use, reproduction, or distribution of Your modifications, or
+for any such Derivative Works as a whole, provided Your use,
+reproduction, and distribution of the Work otherwise complies with
+the conditions stated in this License.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Submission of Contributions. Unless You explicitly state otherwise,
+any Contribution intentionally submitted for inclusion in the Work
+by You to the Licensor shall be under the terms and conditions of
+this License, without any additional terms or conditions.
+Notwithstanding the above, nothing herein shall supersede or modify
+the terms of any separate license agreement you may have executed
+with Licensor regarding such Contributions.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Trademarks. This License does not grant permission to use the trade
+names, trademarks, service marks, or product names of the Licensor,
+except as required for reasonable and customary use in describing the
+origin of the Work and reproducing the content of the NOTICE file.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Disclaimer of Warranty. Unless required by applicable law or
+agreed to in writing, Licensor provides the Work (and each
+Contributor provides its Contributions) on an &amp;ldquo;AS IS&amp;rdquo; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied, including, without limitation, any warranties or conditions
+of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+PARTICULAR PURPOSE. You are solely responsible for determining the
+appropriateness of using or redistributing the Work and assume any
+risks associated with Your exercise of permissions under this License.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Limitation of Liability. In no event and under no legal theory,
+whether in tort (including negligence), contract, or otherwise,
+unless required by applicable law (such as deliberate and grossly
+negligent acts) or agreed to in writing, shall any Contributor be
+liable to You for damages, including any direct, indirect, special,
+incidental, or consequential damages of any character arising as a
+result of this License or out of the use or inability to use the
+Work (including but not limited to damages for loss of goodwill,
+work stoppage, computer failure or malfunction, or any and all
+other commercial damages or losses), even if such Contributor
+has been advised of the possibility of such damages.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Accepting Warranty or Additional Liability. While redistributing
+the Work or Derivative Works thereof, You may choose to offer,
+and charge a fee for, acceptance of support, warranty, indemnity,
+or other liability obligations and/or rights consistent with this
+License. However, in accepting such obligations, You may act only
+on Your own behalf and on Your sole responsibility, not on behalf
+of any other Contributor, and only if You agree to indemnify,
+defend, and hold each Contributor harmless for any liability
+incurred by, or claims asserted against, such Contributor by reason
+of your accepting any such warranty or additional liability.&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>END OF TERMS AND CONDITIONS&lt;/p>
+&lt;p>APPENDIX: How to apply the Apache License to your work.&lt;/p>
+&lt;p>To apply the Apache License to your work, attach the following
+boilerplate notice, with the fields enclosed by brackets &amp;ldquo;[]&amp;rdquo;
+replaced with your own identifying information. (Don&amp;rsquo;t include
+the brackets!) The text should be enclosed in the appropriate
+comment syntax for the file format. We also recommend that a
+file or class name and description of purpose be included on the
+same &amp;ldquo;printed page&amp;rdquo; as the copyright notice for easier
+identification within third-party archives.&lt;/p>
+&lt;p>Copyright [yyyy] [name of copyright owner]&lt;/p>
+&lt;p>Licensed under the Apache License, Version 2.0 (the &amp;ldquo;License&amp;rdquo;);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at&lt;/p>
+&lt;p>&lt;a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0&lt;/a>&lt;/p>
+&lt;p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &amp;ldquo;AS IS&amp;rdquo; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.&lt;/p></description></item><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/quickstart/</guid><description>
+&lt;!--
+&lt;div class="pageinfo pageinfo-primary">
+&lt;p>This document provides instructions on how to build and run KCP-Edge locally.&lt;/p>
+&lt;/div>
+-->
+&lt;p>To use components from KCP-Edge you must:&lt;/p>
+&lt;ol>
+&lt;li>Install and configure KCP to create a working KCP environment&lt;/li>
+&lt;li>Build KCP-Edge&lt;/li>
+&lt;/ol>
+&lt;h2 id="1-install-and-configure-kcp">1. Install and Configure KCP&lt;/h2>
+&lt;h3 id="prerequisites">Prerequisites&lt;/h3>
+&lt;ul>
+&lt;li>&lt;a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl&lt;/a>&lt;/li>
+&lt;li>A Kubernetes cluster (for local testing, consider &lt;a href="http://kind.sigs.k8s.io">kind&lt;/a>)&lt;/li>
+&lt;/ul>
+&lt;h3 id="download-kcp">Download kcp&lt;/h3>
+&lt;p>Visit our &lt;a href="https://github.com/kcp-dev/kcp/releases/latest">latest release page&lt;/a> and download &lt;code>kcp&lt;/code>
+and &lt;code>kubectl-kcp-plugin&lt;/code> that match your operating system and architecture.&lt;/p>
+&lt;p>Extract &lt;code>kcp&lt;/code> and &lt;code>kubectl-kcp-plugin&lt;/code> and place all the files in the &lt;code>bin&lt;/code> directories somewhere in your &lt;code>$PATH&lt;/code>.&lt;/p>
+&lt;h3 id="start-kcp">Start kcp&lt;/h3>
+&lt;p>You can start kcp using this command:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>kcp start
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This launches kcp in the foreground. You can press &lt;code>ctrl-c&lt;/code> to stop it.&lt;/p>
+&lt;p>To see a complete list of server options, run &lt;code>kcp start options&lt;/code>.&lt;/p>
+&lt;h3 id="set-your-kubeconfig">Set your KUBECONFIG&lt;/h3>
+&lt;p>During its startup, kcp generates a kubeconfig in &lt;code>.kcp/admin.kubeconfig&lt;/code>. Use this to connect to kcp and display the
+version to confirm it&amp;rsquo;s working:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#204a87">export&lt;/span> &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>.kcp/admin.kubeconfig
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$ kubectl version
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>WARNING: This version information is deprecated and will be replaced with the output from kubectl version --short. Use --output&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>yaml&lt;span style="color:#000;font-weight:bold">|&lt;/span>json to get the full version.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Client Version: version.Info&lt;span style="color:#ce5c00;font-weight:bold">{&lt;/span>Major:&lt;span style="color:#4e9a06">&amp;#34;1&amp;#34;&lt;/span>, Minor:&lt;span style="color:#4e9a06">&amp;#34;24&amp;#34;&lt;/span>, GitVersion:&lt;span style="color:#4e9a06">&amp;#34;v1.24.4&amp;#34;&lt;/span>, GitCommit:&lt;span style="color:#4e9a06">&amp;#34;95ee5ab382d64cfe6c28967f36b53970b8374491&amp;#34;&lt;/span>, GitTreeState:&lt;span style="color:#4e9a06">&amp;#34;clean&amp;#34;&lt;/span>, BuildDate:&lt;span style="color:#4e9a06">&amp;#34;2022-08-17T18:46:11Z&amp;#34;&lt;/span>, GoVersion:&lt;span style="color:#4e9a06">&amp;#34;go1.19&amp;#34;&lt;/span>, Compiler:&lt;span style="color:#4e9a06">&amp;#34;gc&amp;#34;&lt;/span>, Platform:&lt;span style="color:#4e9a06">&amp;#34;darwin/amd64&amp;#34;&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Kustomize Version: v4.5.4
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Server Version: version.Info&lt;span style="color:#ce5c00;font-weight:bold">{&lt;/span>Major:&lt;span style="color:#4e9a06">&amp;#34;1&amp;#34;&lt;/span>, Minor:&lt;span style="color:#4e9a06">&amp;#34;24&amp;#34;&lt;/span>, GitVersion:&lt;span style="color:#4e9a06">&amp;#34;v1.24.3+kcp-v0.8.0&amp;#34;&lt;/span>, GitCommit:&lt;span style="color:#4e9a06">&amp;#34;41863897&amp;#34;&lt;/span>, GitTreeState:&lt;span style="color:#4e9a06">&amp;#34;clean&amp;#34;&lt;/span>, BuildDate:&lt;span style="color:#4e9a06">&amp;#34;2022-09-02T18:10:37Z&amp;#34;&lt;/span>, GoVersion:&lt;span style="color:#4e9a06">&amp;#34;go1.18.5&amp;#34;&lt;/span>, Compiler:&lt;span style="color:#4e9a06">&amp;#34;gc&amp;#34;&lt;/span>, Platform:&lt;span style="color:#4e9a06">&amp;#34;darwin/amd64&amp;#34;&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="configure-kcp-to-sync-to-your-cluster">Configure kcp to sync to your cluster&lt;/h3>
+&lt;p>kcp can&amp;rsquo;t run pods by itself - it needs at least one physical cluster for that. For this example, we&amp;rsquo;ll be using a
+local &lt;code>kind&lt;/code> cluster. It does not have to exist yet.&lt;/p>
+&lt;p>In this recipe we use the root workspace to hold the description of the workload and where it goes. These usually would go elsewhere, but we use the root workspace here for simplicity.&lt;/p>
+&lt;p>Run the following command to tell kcp about the &lt;code>kind&lt;/code> cluster (replace the syncer image tag as needed; CI now puts built images in &lt;a href="https://github.com/orgs/kcp-dev/packages)">https://github.com/orgs/kcp-dev/packages)&lt;/a>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl kcp workload sync kind --syncer-image ghcr.io/kcp-dev/kcp/syncer:v0.10.0 -o syncer-kind-main.yaml
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating synctarget &lt;span style="color:#4e9a06">&amp;#34;kind&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating service account &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating cluster role &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> to give service account &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> 1. write and sync access to the synctarget &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> 2. write access to apiresourceimports.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Creating or updating cluster role binding &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> to &lt;span style="color:#204a87">bind&lt;/span> service account &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> to cluster role &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Wrote physical cluster manifest to syncer-kind-main.yaml &lt;span style="color:#204a87;font-weight:bold">for&lt;/span> namespace &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span>. Use
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;pcluster-config&amp;gt; kubectl apply -f &lt;span style="color:#4e9a06">&amp;#34;syncer-kind-main.yaml&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to apply it. Use
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;pcluster-config&amp;gt; kubectl get deployment -n &lt;span style="color:#4e9a06">&amp;#34;kcp-syncer-kind-25coemaz&amp;#34;&lt;/span> kcp-syncer-kind-25coemaz
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to verify the syncer pod is running.
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Next, we need to install the syncer pod on our &lt;code>kind&lt;/code> cluster - this is what actually syncs content from kcp to the
+physical cluster. The kind cluster needs to be running by now. Run the following command:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;/path/to/kind/kubeconfig&amp;gt; kubectl apply -f &lt;span style="color:#4e9a06">&amp;#34;syncer-kind-main.yaml&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>namespace/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>serviceaccount/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>secret/kcp-syncer-kind-25coemaz-token created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>clusterrole.rbac.authorization.k8s.io/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>clusterrolebinding.rbac.authorization.k8s.io/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>secret/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>deployment.apps/kcp-syncer-kind-25coemaz created
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="bind-to-workload-apis-and-create-default-placement">Bind to workload APIs and create default placement&lt;/h3>
+&lt;p>If you are running kcp version v0.10.0 or higher, you will need to run the following commmand (continuing in the &lt;code>root&lt;/code> workspace)
+to create a binding to the workload APIs export and a default placement for your physical cluster:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl kcp &lt;span style="color:#204a87">bind&lt;/span> compute root
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Binding APIExport &lt;span style="color:#4e9a06">&amp;#34;root:compute:kubernetes&amp;#34;&lt;/span>.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>placement placement-1pfxsevk created.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Placement &lt;span style="color:#4e9a06">&amp;#34;placement-1pfxsevk&amp;#34;&lt;/span> is ready.
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="create-a-deployment-in-kcp">Create a deployment in kcp&lt;/h3>
+&lt;p>Let&amp;rsquo;s create a deployment in our kcp workspace and see it get synced to our cluster:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl create deployment --image&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>gcr.io/kuar-demo/kuard-amd64:blue --port&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&lt;span style="color:#0000cf;font-weight:bold">8080&lt;/span> kuard
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>deployment.apps/kuard created
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Once your cluster has pulled the image and started the pod, you should be able to verify the deployment is running in
+kcp:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ kubectl get deployments
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>NAME READY UP-TO-DATE AVAILABLE AGE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>kuard 1/1 &lt;span style="color:#0000cf;font-weight:bold">1&lt;/span> &lt;span style="color:#0000cf;font-weight:bold">1&lt;/span> 3s
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>We are still working on adding support for &lt;code>kubectl logs&lt;/code>, &lt;code>kubectl exec&lt;/code>, and &lt;code>kubectl port-forward&lt;/code> to kcp. For the
+time being, you can check directly in your cluster.&lt;/p>
+&lt;p>kcp translates the names of namespaces in workspaces to unique names in a physical cluster. We first must get this
+translated name; if you&amp;rsquo;re following along, your translated name might be different.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;/path/to/kind/kubeconfig&amp;gt; kubectl get pods --all-namespaces --selector &lt;span style="color:#000">app&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>kuard
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>NAMESPACE NAME READY STATUS RESTARTS AGE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>kcp-26zq2mc2yajx kuard-7d49c786c5-wfpcc 1/1 Running &lt;span style="color:#0000cf;font-weight:bold">0&lt;/span> 4m28s
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Now we can e.g. check the pod logs:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>$ &lt;span style="color:#000">KUBECONFIG&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">=&lt;/span>&amp;lt;/path/to/kind/kubeconfig&amp;gt; kubectl --namespace kcp-26zq2mc2yajx logs deployment/kuard &lt;span style="color:#000;font-weight:bold">|&lt;/span> head
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 Starting kuard version: v0.10.0-blue
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 **********************************************************************
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 * WARNING: This server may expose sensitive
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 * and secret information. Be careful.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 **********************************************************************
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2022/09/07 14:04:35 Config:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ce5c00;font-weight:bold">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#4e9a06">&amp;#34;address&amp;#34;&lt;/span>: &lt;span style="color:#4e9a06">&amp;#34;:8080&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#4e9a06">&amp;#34;debug&amp;#34;&lt;/span>: false,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#4e9a06">&amp;#34;debug-sitedata-dir&amp;#34;&lt;/span>: &lt;span style="color:#4e9a06">&amp;#34;./sitedata&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="2-build-and-install-kcp-edge">2. Build and Install KCP-Edge&lt;/h2>
+&lt;p>To build and install KCP-Edge components:&lt;/p>
+&lt;ul>
+&lt;li>clone the latest KCP-Edge &lt;a href="https://github.com/kcp-dev/edge-mc">repository&lt;/a>&lt;/li>
+&lt;li>make tools&lt;/li>
+&lt;li>make build&lt;/li>
+&lt;li>make install&lt;/li>
+&lt;/ul>
+&lt;p>The &lt;a href="Makefile">Makefile&lt;/a> provides a set of targets to help simplify the build
+tasks.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sh" data-lang="sh">&lt;span style="display:flex;">&lt;span>make build
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The following targets can be used to lint, test and build the KCP-Edge controllers:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sh" data-lang="sh">&lt;span style="display:flex;">&lt;span>make golint
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>make &lt;span style="color:#204a87">test&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>make install
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="next-steps">Next steps&lt;/h2>
+&lt;p>Thanks for checking out our quickstart!&lt;/p>
+&lt;p>If you&amp;rsquo;re interested in learning more about all the features KCP and KCP-Edge have to offer, please check out our additional
+documentation:&lt;/p>
+&lt;h3 id="kcp">KCP&lt;/h3>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/concepts.md">Concepts&lt;/a> - a high level overview of kcp concepts&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/workspaces.md">Workspaces&lt;/a> - a more thorough introduction on kcp&amp;rsquo;s workspaces&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/locations-and-scheduling.md">Locations &amp;amp; scheduling&lt;/a> - details on kcp&amp;rsquo;s primitives that abstract over clusters&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/syncer.md">Syncer&lt;/a> - information on running the kcp agent that syncs content between kcp and a physical cluster&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/kubectl-kcp-plugin.md">kubectl plugin&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/authorization.md">Authorization&lt;/a> - how kcp manages access control to workspaces and content&lt;/li>
+&lt;li>&lt;a href="https://github.com/kcp-dev/kcp/tree/main/docs/content/en/main/concepts/virtual-workspaces.md">Virtual workspaces&lt;/a> - details on kcp&amp;rsquo;s mechanism for virtual views of workspace content&lt;/li>
+&lt;/ul>
+&lt;h3 id="kcp-edge">KCP-Edge&lt;/h3>
+&lt;p>TBD&lt;/p>
+&lt;h2 id="contributing">Contributing&lt;/h2>
+&lt;p>We ❤️ our contributors! If you&amp;rsquo;re interested in helping us out, please head over to our &lt;a href="CONTRIBUTING.md">Contributing&lt;/a>.&lt;/p>
+&lt;h2 id="getting-in-touch">Getting in touch&lt;/h2>
+&lt;p>There are several ways to communicate with us:&lt;/p>
+&lt;ul>
+&lt;li>The &lt;a href="https://app.slack.com/client/T09NY5SBT/C021U8WSAFK">&lt;code>#kcp-dev&lt;/code> channel&lt;/a> in the &lt;a href="https://slack.k8s.io">Kubernetes Slack workspace&lt;/a>&lt;/li>
+&lt;li>Our mailing lists:
+&lt;ul>
+&lt;li>&lt;a href="https://groups.google.com/g/kcp-dev">kcp-dev&lt;/a> for development discussions&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="additional-references">Additional references&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="https://www.youtube.com/watch?v=M4mn_LlCyzk">Let&amp;rsquo;s Learn kcp - A minimal Kubernetes API server with Saiyam Pathak - July 7, 2021&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Docs:</title><link>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/getting-started/example-page/</guid><description/></item></channel></rss>

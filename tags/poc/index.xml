@@ -1,0 +1,33 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – poc</title><link>https://docs.kcp-edge.io/public/tags/poc/</link><description>Recent content in poc on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/public/tags/poc/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: Coding Milestones</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/</guid><description>
+&lt;!--
+&lt;div class="pageinfo pageinfo-primary">
+&lt;p>This page contains links to the KCP-Edge coding milestones.&lt;/p>
+&lt;/div>
+--></description></item><item><title>Docs: Milestone PoC2023q1</title><link>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/public/docs/coding-milestones/poc2023q1/</guid><description>
+&lt;!--
+&lt;div class="pageinfo pageinfo-primary">
+&lt;p>This is a placeholder page that shows you how to use this template site.&lt;/p>
+&lt;/div>
+-->
+&lt;p>PoC 2023q1 will be presented on March 30th, 2023. The PoC will include:&lt;/p>
+&lt;ul>
+&lt;li>Separation of inventory and workload management.&lt;/li>
+&lt;li>The focus here is on workload management, and that strictly reads
+inventory.&lt;/li>
+&lt;li>What passes from inventory to workload management is kcp TMC
+Location and SyncTarget objects.&lt;/li>
+&lt;li>Use of a kcp workspace as the container for the central spec of a workload.&lt;/li>
+&lt;li>Propagation of desired state from center to edge, as directed by
+EdgePlacement objects and the Location and SyncTarget objects they reference.&lt;/li>
+&lt;li>Interfaces designed for a large number of edge clusters.&lt;/li>
+&lt;li>Interfaces designed with the intention that edge clusters operate
+independently of each other and the center (e.g., can tolerate only
+occasional connectivity) and thus any &amp;ldquo;service providers&amp;rdquo; (in the
+technical sense from kcp) in the center or elsewhere.&lt;/li>
+&lt;li>Rule-based customization of desired state.&lt;/li>
+&lt;li>Propagation of reported state from edge to center.&lt;/li>
+&lt;li>Summarization of reported state in the center.&lt;/li>
+&lt;li>The edge opens connections to the center, not vice-versa.&lt;/li>
+&lt;li>An edge computing platform &amp;ldquo;product&amp;rdquo; that can be deployed (as
+opposed to a service that is used).&lt;/li>
+&lt;/ul></description></item></channel></rss>
