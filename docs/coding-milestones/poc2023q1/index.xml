@@ -721,7 +721,7 @@ management workspaces.&lt;/p>
 &lt;p>The status summaries may include limited-length lists of broken
 objects.&lt;/p>
 &lt;p>Full status from the edge is available in the mailbox workspaces.&lt;/p></description></item><item><title>Docs: Invitation</title><link>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/coding-milestone-invite-q1/</guid><description>
-&lt;p>Dear Contributors&lt;/p>
+&lt;p>Dear Contributors,&lt;/p>
 &lt;p>We are excited to invite you to join the first &lt;a href="https://github.com/kcp-dev/edge-mc">KCP-Edge opensource community&lt;/a> coding sprint. We will be focus on several key projects that are critical to the development of state-based edge solutions. Our collective work will be showcased to the opensource community on Thursday, March 30th.&lt;/p>
 &lt;p>This coding sprint will provide a great opportunity for you to showcase your skills, learn new techniques, and collaborate with other experienced engineers in the KCP-Edge community. We believe that your contributions will be invaluable in helping us achieve our goals and making a lasting impact in the field of state-based edge technology.&lt;/p>
 &lt;p>The coding sprint will be dedicated to completing the following workload management elements:&lt;/p>
