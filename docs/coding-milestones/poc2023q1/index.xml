@@ -3,7 +3,7 @@
 &lt;p>Status of this memo: This summarizes the current state of design work that is still in
 progress.&lt;/p>
 &lt;/div>
-&lt;img alt="poc2023q1 architecture" width="500px" align="left" src="https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/Edge-PoC-2023q1.svg" />
+&lt;img alt="poc2023q1 architecture" align="center" src="https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/Edge-PoC-2023q1.svg" />
 &lt;h2 id="introduction">Introduction&lt;/h2>
 &lt;p>This is a quick demo of a fragment of what we think is needed for edge
 multi-cluster. It is intended to demonstrate the following points.&lt;/p>
