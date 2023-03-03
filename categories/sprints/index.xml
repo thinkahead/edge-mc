@@ -72,7 +72,7 @@ status information to inventory objects (SyncTargets).&lt;/p>
 &lt;h2 id="design-overview">Design overview&lt;/h2>
 &lt;p>In very brief: the design is to reduce each edge placement problem to
 many instances of kcp&amp;rsquo;s TMC problem.&lt;/p>
-&lt;p>See &lt;a href="Edge-PoC-2023q1.svg">the overview picture&lt;/a> for an overview
+&lt;p>See &lt;a href="https://docs.kcp-edge.io/docs/coding-milestones/poc2023q1/Edge-PoC-2023q1.svg">the overview picture&lt;/a> for an overview
 picture.&lt;/p>
 &lt;h2 id="inventory-management-workspaces">Inventory Management workspaces&lt;/h2>
 &lt;p>This design takes as a given that something maintains some kcp
