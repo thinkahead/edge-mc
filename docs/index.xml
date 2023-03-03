@@ -1020,11 +1020,9 @@ distributed under the License is distributed on an &amp;ldquo;AS IS&amp;rdquo; B
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.&lt;/p></description></item><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/getting-started/quickstart/</guid><description>
-&lt;!--
 &lt;div class="pageinfo pageinfo-primary">
-&lt;p>This document provides instructions on how to build and run KCP-Edge locally.&lt;/p>
+&lt;p>Checkout &lt;a href="https://medium.com/@dettori/toward-building-a-kubernetes-control-plane-for-the-edge-a79eaada5750">this blog post&lt;/a> for a step-by-step guide to configuring kcp&lt;/p>
 &lt;/div>
--->
 &lt;p>To use components from KCP-Edge you must:&lt;/p>
 &lt;ol>
 &lt;li>Install and configure KCP to create a working KCP environment&lt;/li>
