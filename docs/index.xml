@@ -1031,6 +1031,7 @@ limitations under the License.&lt;/p></description></item><item><title>Docs: KCP
 &lt;h2 id="1-install-and-configure-kcp">1. Install and Configure KCP&lt;/h2>
 &lt;h3 id="prerequisites">Prerequisites&lt;/h3>
 &lt;ul>
+&lt;li>go (download from &lt;a href="https://golang.org/dl/">https://golang.org/dl/&lt;/a>)&lt;/li>
 &lt;li>&lt;a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl&lt;/a>&lt;/li>
 &lt;li>A Kubernetes cluster (for local testing, consider &lt;a href="http://kind.sigs.k8s.io">kind&lt;/a>)&lt;/li>
 &lt;/ul>
