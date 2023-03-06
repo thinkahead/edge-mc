@@ -1,6 +1,6 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>KCP-Edge – Getting Started</title><link>https://docs.kcp-edge.io/docs/getting-started/</link><description>Recent content in Getting Started on KCP-Edge</description><generator>Hugo -- gohugo.io</generator><atom:link href="https://docs.kcp-edge.io/docs/getting-started/index.xml" rel="self" type="application/rss+xml"/><item><title>Docs: KCP-Edge Quickstart Guide</title><link>https://docs.kcp-edge.io/docs/getting-started/quickstart/</link><pubDate>Sat, 25 Feb 2023 00:00:00 +0000</pubDate><guid>https://docs.kcp-edge.io/docs/getting-started/quickstart/</guid><description>
 &lt;div class="pageinfo pageinfo-primary">
-&lt;p>Checkout &lt;a href="https://medium.com/@dettori/toward-building-a-kubernetes-control-plane-for-the-edge-a79eaada5750">this blog post&lt;/a> for a step-by-step guide to configuring kcp&lt;/p>
+&lt;p>This page is under construction - please checkout &lt;a href="https://medium.com/@dettori/toward-building-a-kubernetes-control-plane-for-the-edge-a79eaada5750">this blog post&lt;/a> for a step-by-step guide to configuring kcp to operate as kcp-edge will work by default in the near future.&lt;/p>
 &lt;/div>
 &lt;p>To use components from KCP-Edge you must:&lt;/p>
 &lt;ol>
